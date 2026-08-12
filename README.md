@@ -13,8 +13,8 @@ A fully working single-player Blackjack game with a Java Spring Boot REST backen
 | Demo Link    | [blackjack.lyle.app](https://blackjack.lyle.app)                                                                               |
 | Tech Stack   | Java 17+ | Maven 3.9+ | Node.js 18+ | npm                                                                                      |                                                                                                                         
 | Cloud Deploy | ![Azure](https://img.shields.io/badge/microsoft%20azure-0078D4.svg?style=for-the-badge&logo=microsoft%20azure&logoColor=white) |
-| Top Language | ![Github Language](https://img.shields.io/github/languages/top/lylio/whether-the-weather?style=for-the-badge)                  |
-| Last Commit  | ![Github Commit Activity](https://img.shields.io/github/last-commit/lylio/whether-the-weather/main?style=for-the-badge)        |
+| Top Language | ![Github Language](https://img.shields.io/github/languages/top/lylio/blackjack)                                                |
+| Last Commit  | ![Github Commit Activity](https://img.shields.io/github/last-commit/lylio/blackjack/main?style=for-the-badge)                  |
 
 ### Launch & Structure
 
