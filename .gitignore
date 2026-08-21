@@ -1,0 +1,17 @@
+# Node
+node_modules/
+frontend/node_modules/
+
+# Vite
+frontend/dist/
+
+# Java
+backend/target/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
