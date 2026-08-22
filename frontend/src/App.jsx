@@ -60,13 +60,13 @@ function App() {
 }
 
   function hit() {
-  request(`${API_URL}/api/blackjack/games/${game.gameId}/hit`, {
+  request(`${API_URL}/api/blackjack/games/${game.gameId}/hit`, { method: 'POST' })
     method: 'POST'
   })
 }
 
   function stand() {
-  request(`${API_URL}/api/blackjack/games/${game.gameId}/stand`, {
+  request(`${API_URL}/api/blackjack/games/${game.gameId}/stand`, { method: 'POST' })
     method: 'POST'
   })
 }
