@@ -10,7 +10,7 @@ A fully working single-player Blackjack game with a Java Spring Boot REST backen
 
 |              |                                                                                                                                |
 |--------------|--------------------------------------------------------------------------------------------------------------------------------|
-| Demo Link    | [blackjack.lyle.app](https://blackjack.lyle.app)                                                                               |
+| Demo Link    | [blackjack.lyle.app](https://sweet-nurturing-production-9c2d.up.railway.app/)                                                                           |
 | Tech Stack   | Java 17+ | Maven 3.9+ | Node.js 18+ | npm                                                                                      |                                                                                                                         
 | Cloud Deploy | ![Railway](https://img.shields.io/badge/Railway-000000?logo=railway&logoColor=white&style=for-the-badg) |
 | Top Language | ![Github Language](https://img.shields.io/github/languages/top/lylio/blackjack)                                                |
