@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 const initialGame = null
 
 function Card({ card }) {
@@ -44,25 +46,30 @@ function App() {
   }
 
   function newGame() {
-    const amount = Number(wager)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setError('Enter a valid wager.')
-      return
-    }
+  const amount = Number(wager)
 
-    request('/api/blackjack/games', {
-      method: 'POST',
-      body: JSON.stringify({ wager: amount })
-    })
+  if (!Number.isFinite(amount) || amount <= 0) {
+    setError('Enter a valid wager.')
+    return
   }
+
+    request(`${API_URL}/api/blackjack/games`, {
+    method: 'POST',
+    body: JSON.stringify({ wager: amount })
+  })
+}
 
   function hit() {
-    request(`/api/blackjack/games/${game.gameId}/hit`, { method: 'POST' })
-  }
+  request(`${API_URL}/api/blackjack/games/${game.gameId}/hit`, {
+    method: 'POST'
+  })
+}
 
   function stand() {
-    request(`/api/blackjack/games/${game.gameId}/stand`, { method: 'POST' })
-  }
+  request(`${API_URL}/api/blackjack/games/${game.gameId}/stand`, {
+    method: 'POST'
+  })
+}
 
   const gameOver = game && !canPlay
 
