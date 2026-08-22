@@ -1,3 +1,4 @@
+```java
 package com.example.blackjack.service;
 
 import com.example.blackjack.model.*;
@@ -10,16 +11,33 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class BlackjackService {
+
+    private static final double STARTING_BANKROLL = 1000.00;
+
     private final Map<String, BlackjackGame> games = new ConcurrentHashMap<>();
 
-    public GameResponse start(double wager) {
-        if (wager <= 0 || wager > 1000) {
-            throw new IllegalArgumentException("Wager must be between £0.01 and £1,000.");
+    // Current player's bankroll.
+    // This persists between hands while the backend is running.
+    private double bankroll = STARTING_BANKROLL;
+
+    public synchronized GameResponse start(double wager) {
+
+        if (wager <= 0 || wager > bankroll) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Wager must be between £0.01 and your current bankroll of £%.2f.",
+                            bankroll
+                    )
+            );
         }
 
         BlackjackGame game = new BlackjackGame();
+
         game.setWager(round(wager));
-        game.setBankroll(round(1000.00 - wager));
+
+        // Remove the wager from the bankroll when the hand starts.
+        bankroll = round(bankroll - wager);
+        game.setBankroll(bankroll);
 
         game.getPlayer().add(game.draw());
         game.getDealer().add(game.draw());
@@ -27,23 +45,42 @@ public class BlackjackService {
         game.getDealer().add(game.draw());
 
         String id = UUID.randomUUID().toString();
+
         games.put(id, game);
 
+        // Player blackjack
         if (game.getPlayer().isBlackjack()) {
+
+            // Both player and dealer have blackjack = push
             if (game.getDealer().isBlackjack()) {
-                game.setBankroll(round(1000.00));
+
+                bankroll = round(bankroll + wager);
+                game.setBankroll(bankroll);
+
                 game.setStatus(GameStatus.PUSH);
                 game.setMessage("Both have blackjack — push.");
+
             } else {
-                game.setBankroll(round(1000.00 + wager * 1.5));
+
+                // Blackjack pays 3:2
+                bankroll = round(bankroll + (wager * 2.5));
+                game.setBankroll(bankroll);
+
                 game.setStatus(GameStatus.PLAYER_BLACKJACK);
                 game.setMessage("Blackjack! You win 3:2.");
             }
+
+        // Dealer blackjack
         } else if (game.getDealer().isBlackjack()) {
-            game.setBankroll(round(1000.00));
+
+            // Player loses the wager, which has already been removed.
+            game.setBankroll(bankroll);
+
             game.setStatus(GameStatus.DEALER_WIN);
             game.setMessage("Dealer has blackjack.");
+
         } else {
+
             game.setStatus(GameStatus.PLAYER_TURN);
             game.setMessage("Your turn.");
         }
@@ -51,32 +88,48 @@ public class BlackjackService {
         return response(id, game);
     }
 
-    public GameResponse hit(String id) {
+    public synchronized GameResponse hit(String id) {
+
         BlackjackGame game = get(id);
+
         requirePlayerTurn(game);
 
         game.getPlayer().add(game.draw());
 
         if (game.getPlayer().isBust()) {
+
+            // Player loses the wager.
+            game.setBankroll(bankroll);
+
             game.setStatus(GameStatus.PLAYER_BUST);
             game.setMessage("Bust! Dealer wins.");
+
         } else if (game.getPlayer().getValue() == 21) {
+
             dealerPlay(game);
+
         } else {
+
+            game.setBankroll(bankroll);
             game.setMessage("Hit or stand?");
         }
 
         return response(id, game);
     }
 
-    public GameResponse stand(String id) {
+    public synchronized GameResponse stand(String id) {
+
         BlackjackGame game = get(id);
+
         requirePlayerTurn(game);
+
         dealerPlay(game);
+
         return response(id, game);
     }
 
     private void dealerPlay(BlackjackGame game) {
+
         game.setStatus(GameStatus.DEALER_TURN);
 
         while (game.getDealer().getValue() < 17) {
@@ -86,52 +139,85 @@ public class BlackjackService {
         int playerValue = game.getPlayer().getValue();
         int dealerValue = game.getDealer().getValue();
 
+        // Dealer busts - player wins 1:1
         if (game.getDealer().isBust()) {
-            game.setBankroll(round(1000.00 + game.getWager()));
+
+            bankroll = round(bankroll + (game.getWager() * 2));
+            game.setBankroll(bankroll);
+
             game.setStatus(GameStatus.DEALER_BUST);
             game.setMessage("Dealer busts — you win!");
+
+        // Dealer wins - wager already removed from bankroll
         } else if (dealerValue > playerValue) {
-            game.setBankroll(round(1000.00));
+
+            game.setBankroll(bankroll);
+
             game.setStatus(GameStatus.DEALER_WIN);
             game.setMessage("Dealer wins.");
+
+        // Player wins - return wager plus equal winnings
         } else if (dealerValue < playerValue) {
-            game.setBankroll(round(1000.00 + game.getWager()));
+
+            bankroll = round(bankroll + (game.getWager() * 2));
+            game.setBankroll(bankroll);
+
             game.setStatus(GameStatus.PLAYER_WIN);
             game.setMessage("You win!");
+
+        // Push - return the original wager
         } else {
-            game.setBankroll(round(1000.00));
+
+            bankroll = round(bankroll + game.getWager());
+            game.setBankroll(bankroll);
+
             game.setStatus(GameStatus.PUSH);
             game.setMessage("Push — your wager is returned.");
         }
     }
 
     private void requirePlayerTurn(BlackjackGame game) {
+
         if (game.getStatus() != GameStatus.PLAYER_TURN) {
             throw new IllegalStateException("The hand is already finished.");
         }
     }
 
     private BlackjackGame get(String id) {
+
         BlackjackGame game = games.get(id);
+
         if (game == null) {
             throw new IllegalArgumentException("Game not found.");
         }
+
         return game;
     }
 
     private GameResponse response(String id, BlackjackGame game) {
-        List<CardView> dealerCards = game.getDealer().getCards().stream()
+
+        List<CardView> dealerCards = game.getDealer()
+                .getCards()
+                .stream()
                 .map(CardView::new)
                 .toList();
 
-        if (game.getStatus() == GameStatus.PLAYER_TURN && dealerCards.size() >= 2) {
-            dealerCards = List.of(dealerCards.get(0), CardView.hiddenCard());
+        if (game.getStatus() == GameStatus.PLAYER_TURN
+                && dealerCards.size() >= 2) {
+
+            dealerCards = List.of(
+                    dealerCards.get(0),
+                    CardView.hiddenCard()
+            );
         }
 
         return new GameResponse(
                 id,
                 dealerCards,
-                game.getPlayer().getCards().stream().map(CardView::new).toList(),
+                game.getPlayer().getCards()
+                        .stream()
+                        .map(CardView::new)
+                        .toList(),
                 game.getDealer().getValue(),
                 game.getPlayer().getValue(),
                 game.getBankroll(),
@@ -145,7 +231,12 @@ public class BlackjackService {
         return Math.round(value * 100.0) / 100.0;
     }
 
-    public record CardView(String rank, String suit, boolean hidden) {
+    public record CardView(
+            String rank,
+            String suit,
+            boolean hidden
+    ) {
+
         public CardView(Card card) {
             this(card.getLabel(), card.getSuit(), false);
         }
@@ -165,5 +256,7 @@ public class BlackjackService {
             double wager,
             String status,
             String message
-    ) {}
+    ) {
+    }
 }
+```
